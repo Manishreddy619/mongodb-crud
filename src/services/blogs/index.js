@@ -26,9 +26,10 @@ blogsRouter.get('/', async (req, res, next) => {
 			mongoQuery.criteria,
 			mongoQuery.options.fields,
 		)
-			.limit(mongoQuery.options.limit || 4)
+			.limit(mongoQuery.options.limit || 10)
 			.skip(mongoQuery.options.skip)
-			.sort(mongoQuery.options.sort);
+			.sort(mongoQuery.options.sort)
+			.populate({ path: 'authors' });
 		res.send({
 			links: mongoQuery.links('/blogs', total),
 			total,
