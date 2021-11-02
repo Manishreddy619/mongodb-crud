@@ -5,6 +5,7 @@ import cors from 'cors';
 import blogsRouter from './services/blogs/index.js';
 import authorsRouter from './services/authors/index.js';
 import {
+	unauthorizedHandler,
 	notFoundHandler,
 	badRequestHandler,
 	genericErrorHandler,
@@ -24,7 +25,7 @@ server.use(express.json());
 server.use('/blogs', blogsRouter);
 server.use('/authors', authorsRouter);
 // ************************** ERROR HANDLERS ***************************
-
+server.use(unauthorizedHandler);
 server.use(notFoundHandler);
 server.use(badRequestHandler);
 server.use(genericErrorHandler);

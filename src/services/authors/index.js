@@ -1,42 +1,53 @@
 import express from 'express';
 import q2m from 'query-to-mongo';
-
+import bcrypt from 'bcrypt';
 import AuthorModel from './schema.js';
-
+import { userBasicMiddleware } from '../../auth/basicuser.js';
+import { adminOnlyMiddleware } from '../../auth/admin.js';
 const authorsRouter = express.Router();
 
-authorsRouter.get('/', async (req, res, next) => {
-	try {
-		const mongoQuery = q2m(req.query);
-		const total = await AuthorModel.countDocuments(mongoQuery.criteria);
-		const authors = await AuthorModel.find(
-			mongoQuery.criteria,
-			mongoQuery.options.fields,
-		)
-			.limit(mongoQuery.options.limit || 10)
-			.skip(mongoQuery.options.skip)
-			.sort(mongoQuery.options.sort); // no matter how I write them but Mongo will always apply SORT then SKIP then LIMIT in this order
-		res.send({
-			links: mongoQuery.links('/authors', total),
-			total,
-			pageTotal: Math.ceil(total / mongoQuery.options.limit),
-			authors,
-		});
-	} catch (error) {
-		next(error);
-	}
-});
+authorsRouter.get(
+	'/',
+	userBasicMiddleware,
+	adminOnlyMiddleware,
+	async (req, res, next) => {
+		try {
+			const mongoQuery = q2m(req.query);
+			const total = await AuthorModel.countDocuments(mongoQuery.criteria);
+			const authors = await AuthorModel.find(
+				mongoQuery.criteria,
+				mongoQuery.options.fields,
+			)
+				.limit(mongoQuery.options.limit || 10)
+				.skip(mongoQuery.options.skip)
+				.sort(mongoQuery.options.sort); // no matter how I write them but Mongo will always apply SORT then SKIP then LIMIT in this order
+			res.send({
+				links: mongoQuery.links('/authors', total),
+				total,
+				pageTotal: Math.ceil(total / mongoQuery.options.limit),
+				authors,
+			});
+		} catch (error) {
+			next(error);
+		}
+	},
+);
 
-authorsRouter.post('/', async (req, res, next) => {
-	try {
-		const newAuthor = new AuthorModel(req.body);
-		const { _id } = await newAuthor.save();
-		res.send({ _id });
-	} catch (error) {
-		next(error);
-	}
-});
-authorsRouter.get('/:authorId', async (req, res, next) => {
+authorsRouter.post(
+	'/',
+	userBasicMiddleware,
+
+	async (req, res, next) => {
+		try {
+			const newAuthor = new AuthorModel(req.body);
+			const { _id } = await newAuthor.save();
+			res.send({ _id });
+		} catch (error) {
+			next(error);
+		}
+	},
+);
+authorsRouter.get('/:authorId', userBasicMiddleware, async (req, res, next) => {
 	try {
 		const authorId = req.params.authorId;
 
@@ -52,7 +63,7 @@ authorsRouter.get('/:authorId', async (req, res, next) => {
 	}
 });
 
-authorsRouter.put('/:authorId', async (req, res, next) => {
+authorsRouter.put('/:authorId', userBasicMiddleware, async (req, res, next) => {
 	try {
 		const authorId = req.params.authorId;
 		const modifiedAuthor = await AuthorModel.findByIdAndUpdate(
@@ -73,19 +84,23 @@ authorsRouter.put('/:authorId', async (req, res, next) => {
 	}
 });
 
-authorsRouter.delete('/:authorId', async (req, res, next) => {
-	try {
-		const authorId = req.params.authorId;
+authorsRouter.delete(
+	'/:authorId',
+	userBasicMiddleware,
+	async (req, res, next) => {
+		try {
+			const authorId = req.params.authorId;
 
-		const deleteAuthor = await AuthorModel.findByIdAndDelete(authorId);
+			const deleteAuthor = await AuthorModel.findByIdAndDelete(authorId);
 
-		if (deleteAuthor) {
-			res.status(204).send();
-		} else {
-			next(createHttpError(404, `author with id ${authorId} not found!`));
+			if (deleteAuthor) {
+				res.status(204).send();
+			} else {
+				next(createHttpError(404, `author with id ${authorId} not found!`));
+			}
+		} catch (error) {
+			next(error);
 		}
-	} catch (error) {
-		next(error);
-	}
-});
+	},
+);
 export default authorsRouter;

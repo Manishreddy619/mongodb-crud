@@ -1,3 +1,13 @@
+export const unauthorizedHandler = (err, req, res, next) => {
+	if (err.status === 401) {
+		res.status(401).send({
+			status: 'error',
+			message: err.message || 'You are not logged in!',
+		});
+	} else {
+		next(err);
+	}
+};
 export const notFoundHandler = (err, req, res, next) => {
 	if (err.status === 404) {
 		res.status(err.status).send({ message: err.message || 'Not found!' });
