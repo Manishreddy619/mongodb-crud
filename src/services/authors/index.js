@@ -2,14 +2,19 @@ import express from 'express';
 import q2m from 'query-to-mongo';
 import bcrypt from 'bcrypt';
 import AuthorModel from './schema.js';
+import blogModel from '../blogs/schema.js';
 import { userBasicMiddleware } from '../../auth/basicuser.js';
 import { adminOnlyMiddleware } from '../../auth/admin.js';
+import { JWTAuthenticate } from '../../auth/tools.js';
+import createHttpError from 'http-errors';
+import { JWTAuthMiddleware } from '../../auth/tokenmiddleware.js';
 const authorsRouter = express.Router();
 
 authorsRouter.get(
 	'/',
-	userBasicMiddleware,
-	adminOnlyMiddleware,
+	JWTAuthMiddleware,
+	// userBasicMiddleware,
+	// adminOnlyMiddleware,
 	async (req, res, next) => {
 		try {
 			const mongoQuery = q2m(req.query);
@@ -47,6 +52,20 @@ authorsRouter.post(
 		}
 	},
 );
+authorsRouter.post('/login', async (req, res, next) => {
+	try {
+		const { email, password } = req.body;
+		const user = await AuthorModel.checkCredentials(email, password);
+		if (user) {
+			const accessToken = await JWTAuthenticate(user);
+			res.send({ accessToken });
+		} else {
+			next(createHttpError(401, 'credentials are not ok'));
+		}
+	} catch (error) {
+		next(error);
+	}
+});
 authorsRouter.get('/:authorId', userBasicMiddleware, async (req, res, next) => {
 	try {
 		const authorId = req.params.authorId;
@@ -62,6 +81,31 @@ authorsRouter.get('/:authorId', userBasicMiddleware, async (req, res, next) => {
 		next(error);
 	}
 });
+authorsRouter.get(
+	'/:authorId/me/stories',
+	userBasicMiddleware,
+	async (req, res, next) => {
+		try {
+			const authorId = req.params.authorId;
+
+			const author = await AuthorModel.findById(authorId); // similar to findOne, but findOne expects to receive a query as parameter
+
+			if (author) {
+				console.log(author._id);
+				const blog = await blogModel.find();
+				if (blog) {
+					res.send(blog);
+				}
+
+				// res.send(author);
+			} else {
+				next(createHttpError(404, `author with id ${authorId} not found!`));
+			}
+		} catch (error) {
+			next(error);
+		}
+	},
+);
 
 authorsRouter.put('/:authorId', userBasicMiddleware, async (req, res, next) => {
 	try {

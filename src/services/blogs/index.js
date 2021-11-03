@@ -4,6 +4,7 @@ import q2m from 'query-to-mongo';
 import createHttpError from 'http-errors';
 import BlogModel from './schema.js';
 import CommentModel from '../comments/schema.js';
+import { userBasicMiddleware } from '../../auth/basicuser.js';
 const blogsRouter = express.Router();
 
 blogsRouter.post('/', async (req, res, next) => {
