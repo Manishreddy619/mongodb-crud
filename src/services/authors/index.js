@@ -8,6 +8,7 @@ import { adminOnlyMiddleware } from '../../auth/admin.js';
 import { JWTAuthenticate } from '../../auth/tools.js';
 import createHttpError from 'http-errors';
 import { JWTAuthMiddleware } from '../../auth/tokenmiddleware.js';
+import passport from 'passport';
 const authorsRouter = express.Router();
 
 authorsRouter.get(
@@ -32,6 +33,24 @@ authorsRouter.get(
 				pageTotal: Math.ceil(total / mongoQuery.options.limit),
 				authors,
 			});
+		} catch (error) {
+			next(error);
+		}
+	},
+);
+authorsRouter.get(
+	'/googlelogin',
+	passport.authenticate('google', { scope: ['profile', 'email'] }),
+);
+authorsRouter.get(
+	'/googleRedirect',
+	passport.authenticate('google'),
+	async (req, res, next) => {
+		try {
+			console.log(req.user); // we are going to receive the tokens here thanks to the passportNext function and the serializeUser function
+			// res.redirect(
+			// 	`http://localhost:3000?accessToken=${req.user.tokens.accessToken}&refreshToken=${req.user.tokens.refreshToken}`,
+			// );
 		} catch (error) {
 			next(error);
 		}
@@ -66,6 +85,7 @@ authorsRouter.post('/login', async (req, res, next) => {
 		next(error);
 	}
 });
+
 authorsRouter.get('/:authorId', userBasicMiddleware, async (req, res, next) => {
 	try {
 		const authorId = req.params.authorId;

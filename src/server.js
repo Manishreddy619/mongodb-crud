@@ -2,8 +2,11 @@ import express from 'express';
 import mongoose from 'mongoose';
 import listEndpoints from 'express-list-endpoints';
 import cors from 'cors';
+import passport from 'passport';
+import googlestrategy from './auth/oauth.js';
 import blogsRouter from './services/blogs/index.js';
 import authorsRouter from './services/authors/index.js';
+
 import {
 	unauthorizedHandler,
 	notFoundHandler,
@@ -16,10 +19,11 @@ const server = express();
 const port = process.env.PORT || 3001;
 
 // ************************* MIDDLEWARES ********************************
+passport.use('google', googlestrategy);
 
 server.use(cors());
 server.use(express.json());
-
+server.use(passport.initialize());
 // ************************* ROUTES ************************************
 
 server.use('/blogs', blogsRouter);
